@@ -9,10 +9,6 @@
   (for/list ([l (in-lines)])
             (map string->number (string-split l ","))))
 
-(define-values (the-rules the-updates)
-  (with-input-from-file "example.txt"
-    (λ () (values (read-rules) (read-updates)))))
-
 (define (less-than rules a b)
   (for/or ([rule rules])
        (define before (first rule))
