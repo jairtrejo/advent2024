@@ -3,39 +3,56 @@
 (define (read-calibrations)
   (for/list ([l (in-lines)])
     (map string->number (string-split l #rx"[: ]+"))))
-(with-input-from-file "example.txt"
-  read-calibrations)
 
-(define (decode number [mask 1])
+(define (to-base n base)
   (cond
-    [(> mask number) (if (positive? number) '() (list +))]
-    [else (cons (if (zero? (bitwise-and mask number)) + *)
-                (decode number (arithmetic-shift mask 1)))])) 
+    [(< n base) (list n)]
+    [else (cons (modulo n base) (to-base (/ (- n (modulo n base)) base) base))]))
+
+(define (decode number all-operators)
+  (map (curry list-ref all-operators) (to-base number (length all-operators))))
 
 (define (operate operators operands)
   (for/fold ([total (first operands)])
             ([operand (rest operands)]
              [operator operators])
             (operator total operand)))
-(operate (list +) '(1 3))
 
-(define (can-solve? calibration)
-  (define max-encoded-operators (sub1 (expt 2 (length calibration))))
-  (for/or ([encoded-operators max-encoded-operators]
-           #:do ((define total (operate (decode encoded-operators) (rest calibration)))))
+(define (pad lst len e)
+  (cond [(>= (length lst) len) lst]
+        [else (pad (cons e lst) len e)]))
+
+(define (can-solve? calibration all-operators)
+  (define max-encoded (sub1 (expt (length all-operators) (- (length calibration) 2))))
+  (for/or ([encoded (add1 max-encoded)]
+           #:do ((define needed-operators (- (length calibration) 2))
+                 ;; (displayln (decode encoded all-operators))
+                 (define operators (reverse (pad (reverse (decode encoded all-operators))
+                                                 needed-operators
+                                                 (first all-operators))))
+                 (define total (operate operators
+                                        (rest calibration)))))
+          (if (and
+               (= total (first calibration))
+               (> encoded max-encoded))
+              (displayln (~a calibration " (" max-encoded "): " encoded " " operators)) #f)
           (= total (first calibration))))
-(can-solve? '(190 10 19))
 
 (define (part-one)
   (define calibrations (read-calibrations))
   (for/sum ([calibration calibrations]
-            #:when (can-solve? calibration))
+            #:when (can-solve? calibration (list + *)))
            (first calibration)))
 
-;; (define (to-base n base)
-;;   (cond
-;;     [(< n base) (list n)]
-;;     [else (cons (modulo n base) (to-base (/ (- n (modulo n base)) base) base))]))
-;; (to-base 0 3)
-
 (with-input-from-file "input.txt" part-one)
+
+(define (concat a b)
+  (string->number (string-append (number->string a) (number->string b))))
+
+(define (part-two)
+  (define calibrations (read-calibrations))
+  (for/sum ([calibration calibrations]
+            #:when (can-solve? calibration (list + concat *)))
+           (first calibration)))
+
+(with-input-from-file "input.txt" part-two)
