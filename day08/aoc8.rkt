@@ -29,7 +29,6 @@
 (define (within? point size)
   (and (< -1 (real-part point) (car size))
        (< -1 (imag-part point) (cdr size))))
-(within? (make-rectangular 0 11) the-size)
 
 (define (part-one)
   (define-values (antennas size) (read-antennas))
